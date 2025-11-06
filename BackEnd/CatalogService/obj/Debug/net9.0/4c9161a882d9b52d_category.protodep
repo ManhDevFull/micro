@@ -1,0 +1,2 @@
+obj/Debug/net9.0/Category.cs \
+obj/Debug/net9.0/CategoryGrpc.cs: ../Contracts/category.proto
