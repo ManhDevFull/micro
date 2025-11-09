@@ -111,3 +111,4 @@
 /run/media/manh/01DB60055A8FAD30/micro/BackEnd/chat/obj/Debug/net9.0/ref/chat.dll
 /run/media/manh/01DB60055A8FAD30/micro/BackEnd/chat/bin/Debug/net9.0/Grpc.AspNetCore.Server.dll
 /run/media/manh/01DB60055A8FAD30/micro/BackEnd/chat/bin/Debug/net9.0/Grpc.AspNetCore.Server.ClientFactory.dll
+/run/media/manh/01DB60055A8FAD30/micro/BackEnd/chat/obj/Debug/net9.0/chat.sourcelink.json

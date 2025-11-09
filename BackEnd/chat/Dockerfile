@@ -2,15 +2,14 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 COPY . .
-WORKDIR /src/dotnet
+WORKDIR /src/chat
 
 RUN dotnet restore
 RUN dotnet publish -c Release -o /app/publish
-RUN cp vertex.json /app/publish/vertex.json
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-EXPOSE 5000 5100
-ENTRYPOINT ["dotnet", "dotnet.dll"]
+EXPOSE 5295 5296
+ENTRYPOINT ["dotnet", "chat.dll"]

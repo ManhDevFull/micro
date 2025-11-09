@@ -1,16 +1,16 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
+# Copy the entire backend so cross-project references (e.g. Contracts) are available
 COPY . .
-WORKDIR /src/dotnet
+WORKDIR /src/CatalogService
 
 RUN dotnet restore
 RUN dotnet publish -c Release -o /app/publish
-RUN cp vertex.json /app/publish/vertex.json
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
-EXPOSE 5000 5100
-ENTRYPOINT ["dotnet", "dotnet.dll"]
+EXPOSE 5085 5086
+ENTRYPOINT ["dotnet", "CatalogService.dll"]

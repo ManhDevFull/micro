@@ -1,18 +1,111 @@
-version: "3.9"
 services:
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: micro-rabbitmq
     ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # UI Management
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-  postgres:
-    image: postgres:16
-    container_name: postgres
-    environment:
-      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  catalog-service:
+    container_name: catalog-service
+    build:
+      context: .
+      dockerfile: CatalogService/Dockerfile
     ports:
-      - "5432:5432"
+      - "5085:5085"
+      - "5086:5086"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "${CATALOG_DB_CONNECTION}"
+      RabbitMq__Host: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  order-service:
+    container_name: order-service
+    build:
+      context: .
+      dockerfile: OrderService/Dockerfile
+    ports:
+      - "5053:5053"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5053
+      ConnectionStrings__Default: "${ORDER_DB_CONNECTION}"
+      RabbitMq__Host: amqp://guest:guest@rabbitmq:5672
+      Grpc__CatalogUrl: http://catalog-service:5085
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+    restart: unless-stopped
+
+  notification-service:
+    container_name: notification-service
+    build:
+      context: .
+      dockerfile: NotificationService/Dockerfile
+    ports:
+      - "5283:5283"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5283
+      ConnectionStrings__Default: "${NOTIFY_DB_CONNECTION}"
+      RabbitMq__Host: amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+    restart: unless-stopped
+
+  chat-service:
+    container_name: chat-service
+    build:
+      context: .
+      dockerfile: chat/Dockerfile
+    ports:
+      - "5295:5295"
+      - "5296:5296"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "${CHAT_DB_CONNECTION}"
+      Grpc__AuthUrl: http://auth-service:5100
+      Jwt__Key: THIS_IS_MY_SUPER_SECRET_KEY_CHANGE_IT
+      Jwt__Issuer: myapp
+      Jwt__Audience: myapp_users
+    restart: unless-stopped
+
+  auth-service:
+    container_name: auth-service
+    build:
+      context: .
+      dockerfile: dotnet/Dockerfile
+    ports:
+      - "5000:5000"
+      - "5100:5100"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "${AUTH_DB_CONNECTION}"
+      Grpc__ChatUrl: http://chat-service:5296
+      Jwt__Key: THIS_IS_MY_SUPER_SECRET_KEY_CHANGE_IT
+      Jwt__Issuer: myapp
+      Jwt__Audience: myapp_users
+      Cloudinary__CloudName: dwtvupbqd
+      Cloudinary__ApiKey: "858545833884533"
+      Cloudinary__ApiSecret: "3yPZemKa1GgLchd_8Mf1YtlaJFo"
+    depends_on:
+      chat-service:
+        condition: service_started
+    restart: unless-stopped

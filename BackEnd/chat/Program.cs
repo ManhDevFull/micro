@@ -1,7 +1,8 @@
 using System.Security.Claims;
 using System.Text;
+using ChatRealtime;
+using ChatService.Configurations;
 using ChatService.Data;
-using ChatService.Endpoints;
 using Dotnet.Grpc;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -38,6 +39,7 @@ builder.Services.AddDbContext<ChatDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.Configure<ChatSettings>(builder.Configuration.GetSection("Chat"));
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -126,8 +128,6 @@ app.MapGrpcService<ChatService.Grpc.ChatGrpcService>();
 // SignalR realtime
 app.MapHub<ChatHub>("/chatHub");
 
-// REST endpoints cho FE (chat-api)
-app.MapChatEndpoints();
 app.MapControllers();
 
 
